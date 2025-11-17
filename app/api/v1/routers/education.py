@@ -7,8 +7,6 @@ from app.services import education as service
 
 router = APIRouter(prefix="/education", tags=["Education"])
 
-
-
 @router.get("/", response_model=list[EducationOut])
 def get_all(db: Session = Depends(get_db)):
     return service.get_all(db)
