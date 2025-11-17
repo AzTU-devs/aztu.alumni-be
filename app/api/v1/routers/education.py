@@ -1,18 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app.core.db import SessionLocal
+from app.core.db import SessionLocal, get_db
 from app.api.v1.schemas.education import EducationCreate, EducationUpdate, EducationOut
 from app.services import education as service
 
 router = APIRouter(prefix="/education", tags=["Education"])
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @router.get("/", response_model=list[EducationOut])
