@@ -1,41 +1,33 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.db import SessionLocal, get_db
-from app.api.v1.schemas.education import EducationCreate, EducationUpdate, EducationOut
+from app.core.db import get_db
+from app.api.v1.schemas.education import EducationCreate, EducationUpdate
 from app.services import education as service
 
-router = APIRouter(prefix="/education", tags=["Education"])
-
-@router.get("/", response_model=list[EducationOut])
-def get_all(db: Session = Depends(get_db)):
-    return service.get_all(db)
+router = APIRouter(prefix="/api/education", tags=["Education"])
 
 
-@router.get("/{education_id}", response_model=EducationOut)
-def get_one(education_id: int, db: Session = Depends(get_db)):
-    item = service.get_by_id(db, education_id)
-    if not item:
-        raise HTTPException(404, "Education not found")
-    return item
+@router.get("/")
+async def get_all(db: AsyncSession = Depends(get_db)):
+    return await service.get_all(db)
 
 
-@router.post("/", response_model=EducationOut)
-def create_item(data: EducationCreate, db: Session = Depends(get_db)):
-    return service.create(db, data)
+@router.get("/{uuid}")
+async def get_one(uuid: str, db: AsyncSession = Depends(get_db)):
+    return await service.get_by_uuid_response(db, uuid)
 
 
-@router.put("/{education_id}", response_model=EducationOut)
-def update_item(education_id: int, data: EducationUpdate, db: Session = Depends(get_db)):
-    updated = service.update(db, education_id, data)
-    if not updated:
-        raise HTTPException(404, "Education not found")
-    return updated
+@router.post("/")
+async def create_item(data: EducationCreate, db: AsyncSession = Depends(get_db)):
+    return await service.create(db, data)
 
 
-@router.delete("/{education_id}")
-def delete_item(education_id: int, db: Session = Depends(get_db)):
-    deleted = service.delete(db, education_id)
-    if not deleted:
-        raise HTTPException(404, "Education not found")
-    return {"message": "Deleted successfully"}
+@router.put("/{uuid}")
+async def update_item(uuid: str, data: EducationUpdate, db: AsyncSession = Depends(get_db)):
+    return await service.update(db, uuid, data)
+
+
+@router.delete("/{uuid}")
+async def delete_item(uuid: str, db: AsyncSession = Depends(get_db)):
+    return await service.delete(db, uuid)
