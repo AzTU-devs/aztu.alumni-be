@@ -28,6 +28,7 @@ engine = create_async_engine(
     connect_args={"ssl": ssl_context},
     echo=True,
     future=True,
+    execution_options={"compiled_cache_size": 0},
 )
 
 AsyncSessionLocal = sessionmaker(

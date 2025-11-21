@@ -1,0 +1,48 @@
+import re
+from fastapi import HTTPException, status
+
+async def validate_password(password: str):
+    if len(password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 8 characters long"
+        )
+    
+    if not re.search(r"[A-Z]", password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least uppercase letter"
+        )
+    
+    if not re.search(r"[a-z]", password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one lowercase letter"
+        )
+    
+    if not re.search(r"\d", password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one number"
+        )
+    
+    if not re.search(r"[!@#$%^&*(),.?:{}|<>]", password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least one special character"
+        )
+    
+    return True
+
+from passlib.context import CryptContext
+
+pwd_content = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def hash_password(plain_pass: str) -> str:
+    truncated_pass = plain_pass.encode('utf-8')[:72].decode('utf-8', 'ignore')
+    return pwd_content.hash(truncated_pass)
+
+def verify_password(plain_pass: str, hashed_pass) -> str:
+    return pwd_content.verify(
+        plain_pass, hashed_pass
+    )
