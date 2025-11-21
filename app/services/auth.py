@@ -305,6 +305,11 @@ async def signin(
 
         alumni = alumni_query.scalar_one_or_none()
 
+        auth_user.last_login = datetime.utcnow()
+
+        await db.commit()
+        await db.refresh(auth_user)
+
         alumni_obj = {
             "name": alumni.name,
             "surname": alumni.surname,

@@ -1,12 +1,17 @@
+import os
 from fastapi import FastAPI
 from app.core.database import get_db
 from app.core.database import engine
+from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes.auth import router as auth_router
 from app.api.v1.routes.alumni import router as alumni_router
+from app.api.v1.routes.education import router as education_router
 from app.api.v1.routes.user_photos import router as user_photo_router
 
 app = FastAPI(title="AZTU Alumni API")
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.on_event("startup")
 async def on_startup():
@@ -23,6 +28,7 @@ app.add_middleware(
 
 app.include_router(alumni_router, prefix="/api/alumni", tags=["Alumni"])
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(education_router, prefix="/api/education", tags=["Education"])
 app.include_router(user_photo_router, prefix="/api/profile-photo", tags=["User profile photo"])
 
 @app.get("/")

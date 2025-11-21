@@ -24,7 +24,7 @@ async def get_alumnis_endpoint(
     uuid: str,
     db: AsyncSession = Depends(get_db)
 ):
-    return await get_alumnis(
+    return await get_alumni_by_uuid(
         uuid=uuid,
         db=db
     )

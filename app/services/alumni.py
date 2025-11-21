@@ -6,6 +6,7 @@ from app.models.alumni import Alumni
 from app.api.v1.schemas.alumni import *
 from fastapi import Depends, status, Query
 from fastapi.responses import JSONResponse
+from app.models.user_photos import UserPhotos
 from sqlalchemy.ext.asyncio import AsyncSession
 
 async def get_alumnis(
@@ -43,7 +44,13 @@ async def get_alumnis(
 
             auth_user = auth_query.scalar_one_or_none()
 
-            # Convert military_obligation number to readable text
+            photo_query = await db.execute(
+                select(UserPhotos)
+                .where(UserPhotos.uuid == alumni.uuid)
+            )
+
+            photo = photo_query.scalar_one_or_none()
+
             military_map = {
                 1: "completed",
                 2: "not_done",
@@ -53,13 +60,18 @@ async def get_alumnis(
             }
 
             alumni_obj = {
+                "uuid": str(alumni.uuid),
                 "name": alumni.name,
                 "surname": alumni.surname,
                 "father_name": alumni.father_name,
                 "fin_code": alumni.fin_code,
                 "email": auth_user.email,
                 "is_active": auth_user.is_active,
-                "military_obligation": military_map.get(alumni.military_obligation, None)
+                "military_obligation": military_map.get(alumni.military_obligation, None),
+                "job_title": alumni.job_title,
+                "photo": photo.image if photo else None,
+                "last_login": auth_user.last_login.isoformat() if auth_user.last_login else None,
+                "created_at": alumni.created_at.isoformat() if alumni.created_at else None
             }
 
             alumni_arr.append(alumni_obj)
@@ -107,6 +119,13 @@ async def get_alumni_by_uuid(
                     "message": "uuid is invalid"
                 }, status_code=status.HTTP_404_NOT_FOUND
             )
+
+        photo_query = await db.execute(
+            select(UserPhotos)
+            .where(UserPhotos.uuid == uuid)
+        )
+
+        photo = photo_query.scalar_one_or_none()
         
         alumni_obj = {
             "name": alumni.name,
@@ -116,6 +135,7 @@ async def get_alumni_by_uuid(
             "email": auth_user.email,
             "gender": alumni.gender,
             "birth_date": alumni.birth_date.isoformat() if alumni.birth_date else None,
+            "job_title": alumni.job_title,
             "phone_number": alumni.phone_is_public,
             "registered_city": alumni.registered_city,
             "registered_address": alumni.registered_address,
@@ -129,9 +149,11 @@ async def get_alumni_by_uuid(
                 5: "Digər"
             }.get(alumni.military_obligation, None),
             "married": alumni.married,
+            "photo": photo.image if photo else None,
             "created_at": alumni.created_at.isoformat() if alumni.created_at else None,
             "updated_at": alumni.updated_at.isoformat() if alumni.updated_at else None,
-            "is_active": auth_user.is_active
+            "is_active": auth_user.is_active,
+            "last_login": auth_user.last_login.isoformat() if auth_user.last_login else None
         }
 
         return JSONResponse(
@@ -193,7 +215,7 @@ async def create_alumni(
             gender = request.gender,
             birth_date = request.birth_date,
             phone_is_public = False,
-            address_is_publi = False,
+            address_is_public = False,
             created_at = datetime.utcnow()
         )
 

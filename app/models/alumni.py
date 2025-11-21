@@ -23,6 +23,7 @@ class Alumni(Base):
     phone_number = Column(String, unique=True)
     phone_is_public = Column(Boolean, default=False)
     fin_code = Column(String(7), unique=True)
+    job_title = Column(String(255))
     registered_city = Column(String)
     registered_address = Column(String)
     address = Column(String)

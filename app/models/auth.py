@@ -1,5 +1,6 @@
 from sqlalchemy import (
     Date,
+    DateTime,
     Column,
     Integer,
     String,
@@ -19,8 +20,8 @@ class Auth(Base):
     password_hash = Column(String, nullable=False)
     is_active = Column(Boolean, nullable=False, default=True)
     failed_attemps = Column(Integer)
-    locked_until = Column(Date)
-    last_login = Column(Date)
+    locked_until = Column(DateTime)
+    last_login = Column(DateTime)
     is_verified = Column(Boolean, nullable=False, default=False)
     created_at = Column(Date, nullable=False)
     updated_at = Column(Date, onupdate=datetime.utcnow())

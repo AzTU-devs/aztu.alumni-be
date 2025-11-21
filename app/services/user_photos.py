@@ -53,7 +53,7 @@ async def upload_image(
         
         new_user_photo = UserPhotos(
             uuid=uuid,
-            image=folder_path,
+            image=f"{folder_path}/image.png",
             created_at=datetime.utcnow()
         )
 
