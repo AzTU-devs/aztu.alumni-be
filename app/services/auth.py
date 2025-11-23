@@ -311,6 +311,7 @@ async def signin(
         await db.refresh(auth_user)
 
         alumni_obj = {
+            "uuid": str(alumni.uuid),
             "name": alumni.name,
             "surname": alumni.surname,
             "father_name": alumni.father_name,

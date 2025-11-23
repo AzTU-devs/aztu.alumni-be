@@ -6,8 +6,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes.auth import router as auth_router
 from app.api.v1.routes.alumni import router as alumni_router
+from app.api.v1.routes.vacancy import router as vacancy_router
 from app.api.v1.routes.education import router as education_router
 from app.api.v1.routes.user_photos import router as user_photo_router
+from app.api.v1.routes.vacancy_category import router as vacancy_category_router
 
 app = FastAPI(title="AZTU Alumni API")
 
@@ -27,8 +29,10 @@ app.add_middleware(
 
 
 app.include_router(alumni_router, prefix="/api/alumni", tags=["Alumni"])
+app.include_router(vacancy_router, prefix="/api/vacancy", tags=["Vacancy"])
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(education_router, prefix="/api/education", tags=["Education"])
+app.include_router(vacancy_category_router, prefix="/api/vacancy/category", tags=["Vacancy Category"])
 app.include_router(user_photo_router, prefix="/api/profile-photo", tags=["User profile photo"])
 
 @app.get("/")

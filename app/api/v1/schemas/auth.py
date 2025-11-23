@@ -1,7 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field
-from datetime import date, datetime
-from typing import Optional
-
+from datetime import date
+from pydantic import BaseModel, EmailStr
 
 class Signup(BaseModel):
     name: str
