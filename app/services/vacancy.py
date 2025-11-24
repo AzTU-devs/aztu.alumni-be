@@ -2,12 +2,34 @@ import random
 from datetime import datetime
 from sqlalchemy import select, func
 from app.core.session import get_db
-from app.models.vacancy import Vacancy, JobLocationType, EmploymentType, VacancyStatus, Currency
+from app.models.vacancy import Vacancy
 from app.api.v1.schemas.vacancy import *
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, HTTPException, status
 from app.models.vacancy_category import VacancyCategory
+
+CURRENCY_MAP = {
+    1: "AZN",
+    2: "USD",
+    3: "EUR"
+}
+
+EMPLOYMENT_TYPE_MAP = {
+    1: "Tam ştat",
+    2: "Yarım ştat",
+    3: "Özünüməşğul",
+    4: "Frilans",
+    5: "Müqaviləli",
+    6: "Təcrübəçi",
+    7: "Könüllü"
+}
+
+JOB_LOCATION_TYPE_MAP = {
+    1: "Ofisdə",
+    2: "Hibrid",
+    3: "Uzaqdan"
+}
 
 def generate_vacancy_code():
     random_number = random.randint(100000, 999999)
@@ -41,16 +63,16 @@ async def create_vacancy(
             job_title=vacancy_request.job_title,
             company=vacancy_request.company,
             working_hours=vacancy_request.working_hours,
-            job_location_type=JobLocationType[vacancy_request.job_location_type].value,
-            employment_type=EmploymentType[vacancy_request.employment_type].value,
+            job_location_type=1,
+            employment_type=1,
             country=vacancy_request.country,
             city=vacancy_request.city,
             salary_min=vacancy_request.salary_min,
             salary_max=vacancy_request.salary_max,
-            currency=Currency[vacancy_request.currency].value,
+            currency=1,
             is_salary_public=vacancy_request.is_salary_public,
             deadline=vacancy_request.deadline,
-            status=VacancyStatus[vacancy_request.status].value,
+            status=1,
             created_at=datetime.utcnow()
         )
 
@@ -115,20 +137,21 @@ async def get_vacancies(
             category = category_query.scalar_one_or_none()
 
             vacancy_obj = {
+                "vacancy_code": vacancy.vacancy_code,
                 "category": category.title,
                 "job_title": vacancy.job_title,
                 "company": vacancy.company,
                 "working_hours": vacancy.working_hours,
-                "job_location_type": vacancy.job_location_type.value,
-                "employment_type": vacancy.employment_type.value,
+                "job_location_type": JOB_LOCATION_TYPE_MAP.get(vacancy.job_location_type, None),
+                "employment_type": EMPLOYMENT_TYPE_MAP.get(vacancy.employment_type, None),
                 "country": vacancy.country,
                 "city": vacancy.city,
                 "salary_min": vacancy.salary_min,
                 "salary_max": vacancy.salary_max,
-                "currency": vacancy.currency.value,
+                "currency": CURRENCY_MAP.get(vacancy.currency, None),
                 "is_salary_public": vacancy.is_salary_public,
                 "deadline": vacancy.deadline.isoformat() if vacancy.deadline else None,
-                "status": vacancy.status.value,
+                "status": vacancy.status,
                 "created_at": vacancy.created_at.isoformat() if vacancy.created_at else None,
             }
 
