@@ -37,20 +37,20 @@ class CurrencyEnum(str, Enum):
 
 # Base schema shared by Create and Update
 class VacancyBase(BaseModel):
-    category_code: Optional[str]
+    category_code: str
     job_title: str
     company: str
     working_hours: str
-    job_location_type: JobLocationTypeEnum
-    employment_type: EmploymentTypeEnum
+    job_location_type: int
+    employment_type: int
     country: str
     city: str
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
-    currency: CurrencyEnum
+    currency: int
     is_salary_public: bool = True
     deadline: date
-    status: VacancyStatusEnum
+    status: int
 
 
 # Schema for creating a new vacancy
@@ -64,16 +64,16 @@ class VacancyUpdate(BaseModel):
     job_title: Optional[str]
     company: Optional[str]
     working_hours: Optional[str]
-    job_location_type: Optional[JobLocationTypeEnum]
-    employment_type: Optional[EmploymentTypeEnum]
+    job_location_type: Optional[int]
+    employment_type: Optional[int]
     country: Optional[str]
     city: Optional[str]
     salary_min: Optional[int]
     salary_max: Optional[int]
-    currency: Optional[CurrencyEnum]
+    currency: Optional[int]
     is_salary_public: Optional[bool]
     deadline: Optional[date]
-    status: Optional[VacancyStatusEnum]
+    status: Optional[int]
 
 
 # Schema returned in responses (includes DB fields)

@@ -9,7 +9,9 @@ from app.api.v1.routes.alumni import router as alumni_router
 from app.api.v1.routes.vacancy import router as vacancy_router
 from app.api.v1.routes.education import router as education_router
 from app.api.v1.routes.user_photos import router as user_photo_router
+from app.api.v1.routes.work_experience import router as experience_router
 from app.api.v1.routes.vacancy_category import router as vacancy_category_router
+from app.api.v1.routes.vacancy_requirements import router as vacancy_requirement_router
 
 app = FastAPI(title="AZTU Alumni API")
 
@@ -32,8 +34,10 @@ app.include_router(alumni_router, prefix="/api/alumni", tags=["Alumni"])
 app.include_router(vacancy_router, prefix="/api/vacancy", tags=["Vacancy"])
 app.include_router(auth_router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(education_router, prefix="/api/education", tags=["Education"])
-app.include_router(vacancy_category_router, prefix="/api/vacancy/category", tags=["Vacancy Category"])
+app.include_router(experience_router, prefix="/api/experience", tags=["Experience"])
 app.include_router(user_photo_router, prefix="/api/profile-photo", tags=["User profile photo"])
+app.include_router(vacancy_category_router, prefix="/api/vacancy/category", tags=["Vacancy Category"])
+app.include_router(vacancy_requirement_router, prefix="/api/vacancy/requirement", tags=["Vacancy Requirements"])
 
 @app.get("/")
 async def root():

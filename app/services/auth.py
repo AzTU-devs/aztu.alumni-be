@@ -163,10 +163,7 @@ async def verify_signup(
             father_name=signup_request.father_name,
             gender=signup_request.gender,
             birth_date=signup_request.birth_date,
-            created_at=datetime.utcnow(),
-            education_degree=signup_request.education_degree,
-            start_date=signup_request.start_date,
-            end_date=signup_request.end_date
+            created_at=datetime.utcnow()
         )
 
         new_education = Education(
@@ -310,13 +307,34 @@ async def signin(
         await db.commit()
         await db.refresh(auth_user)
 
+        profile_fields = [
+            alumni.name,
+            alumni.surname,
+            alumni.father_name,
+            alumni.birth_date,
+            alumni.phone_number,
+            alumni.phone_is_public,
+            alumni.fin_code,
+            alumni.job_title,
+            alumni.registered_city,
+            alumni.registered_address,
+            alumni.address,
+            alumni.address_is_public,
+            alumni.military_obligation,
+            alumni.married
+        ]
+        filled_count = sum(1 for field in profile_fields if field not in (None, ""))
+        total_fields = len(profile_fields)
+        profile_completed_percentage = int((filled_count / total_fields) * 100)
+
         alumni_obj = {
             "uuid": str(alumni.uuid),
             "name": alumni.name,
             "surname": alumni.surname,
             "father_name": alumni.father_name,
             "email": auth_user.email,
-            "fin_code": alumni.fin_code
+            "fin_code": alumni.fin_code,
+            "profile_completed_percentage": profile_completed_percentage
         }
 
         token = encode_auth_token(str(auth_user.uuid), auth_user.is_verified, auth_user.is_verified)

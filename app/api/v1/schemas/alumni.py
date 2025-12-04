@@ -32,6 +32,22 @@ class AlumniUpdate(BaseModel):
     military_obligation: Optional[int] = None
     married: Optional[bool] = None
 
+class CompleteProfile(BaseModel):
+    uuid: str
+    name: str
+    surname: str
+    father_name: str
+    birth_date: str
+    phone_number: str
+    phone_is_public: bool
+    fin_code: str
+    job_title: str
+    registered_city: str
+    registered_address: str
+    address: str
+    address_is_public: bool
+    military_obligation: int
+    married: bool
 
 # For returning alumni data to the frontend
 class AlumniResponse(AlumniBase):

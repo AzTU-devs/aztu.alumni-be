@@ -1,6 +1,6 @@
 import random
 from datetime import datetime
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from app.core.session import get_db
 from app.models.vacancy import Vacancy
 from app.api.v1.schemas.vacancy import *
@@ -63,8 +63,8 @@ async def create_vacancy(
             job_title=vacancy_request.job_title,
             company=vacancy_request.company,
             working_hours=vacancy_request.working_hours,
-            job_location_type=1,
-            employment_type=1,
+            job_location_type=vacancy_request.job_location_type,
+            employment_type=vacancy_request.employment_type,
             country=vacancy_request.country,
             city=vacancy_request.city,
             salary_min=vacancy_request.salary_min,
@@ -98,7 +98,11 @@ async def create_vacancy(
 async def get_vacancies(
     db: AsyncSession = Depends(get_db),
     start: int = 0,
-    end: int = 10
+    end: int = 10,
+    search: str | None = None,
+    employment_type: int | None = None,
+    job_location_type: int | None = None,
+    vacancy_category: str | None = None
 ):
     try:
         if end <= start or start < 0:
@@ -107,11 +111,36 @@ async def get_vacancies(
                 detail="`start` must be >= 0 and `end` must be greater than `start`"
             )
 
-        total_query = await db.execute(select(func.count(Vacancy.vacancy_code)))
+        base_query = select(Vacancy)
+
+        if search:
+            normalized_search = search.lower().replace("-", "").replace(" ", "")
+
+            base_query = base_query.where(
+                or_(
+                    func.replace(func.replace(func.lower(Vacancy.job_title), '-', ''), ' ', '').like(f"%{normalized_search}%"),
+                    func.lower(Vacancy.company).like(f"%{search.lower()}%"),
+                    func.lower(Vacancy.country).like(f"%{search.lower()}%"),
+                    func.lower(Vacancy.city).like(f"%{search.lower()}%")
+                )
+            )
+
+        if employment_type:
+            base_query = base_query.where(Vacancy.employment_type == employment_type)
+
+        if job_location_type:
+            base_query = base_query.where(Vacancy.job_location_type == job_location_type)
+
+        if vacancy_category:
+            base_query = base_query.where(Vacancy.category_code == vacancy_category)
+
+        total_query = await db.execute(
+            select(func.count()).select_from(base_query.subquery())
+        )
         total = total_query.scalar() or 0
 
         vacancy_query = await db.execute(
-            select(Vacancy)
+            base_query
             .offset(start)
             .limit(end - start)
         )

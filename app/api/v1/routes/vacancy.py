@@ -10,11 +10,19 @@ router = APIRouter()
 async def get_vacancies_endpoint(
     start: int = Query(ge=0),
     end: int = Query(ge=10),
+    search: str | None = Query(default=None),
+    employment_type: int | None = Query(default=None),
+    job_location_type: int | None = Query(default=None),
+    vacancy_category: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db)
 ):
     return await get_vacancies(
         start=start,
         end=end,
+        search=search,
+        employment_type=employment_type,
+        job_location_type=job_location_type,
+        vacancy_category=vacancy_category,
         db=db
     )
 

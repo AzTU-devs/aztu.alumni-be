@@ -1,4 +1,5 @@
-from sqlalchemy import select
+from sqlalchemy import select, or_
+from sqlalchemy.sql import func
 from datetime import datetime
 from app.models.auth import Auth
 from app.core.session import get_db
@@ -8,18 +9,37 @@ from fastapi import Depends, status, Query
 from fastapi.responses import JSONResponse
 from app.models.user_photos import UserPhotos
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 async def get_alumnis(
     start: int = Query(...),
     end: int = Query(...),
+    search: str | None = Query(default=None),
     db:  AsyncSession = Depends(get_db)
 ):
     try:
-        total_query = await db.execute(select(Alumni))
+        base_query = select(Alumni)
+
+        if search:
+            normalized_search = search.lower().replace("-", "").replace(" ", "")
+            base_query = base_query.where(
+                or_(
+                    func.replace(func.replace(func.lower(Alumni.name), '-', ''), ' ', '').like(f"%{normalized_search}%"),
+                    func.replace(func.replace(func.lower(Alumni.surname), '-', ''), ' ', '').like(f"%{normalized_search}%"),
+                    func.replace(func.replace(func.lower(Alumni.father_name), '-', ''), ' ', '').like(f"%{normalized_search}%"),
+                    func.lower(Alumni.fin_code).like(f"%{search.lower()}%"),
+                    func.lower(Alumni.job_title).like(f"%{search.lower()}%")
+                )
+            )
+
+        total_query = await db.execute(base_query)
         total = len(total_query.scalars().all())
 
         alumni_query = await db.execute(
-            select(Alumni)
+            base_query
             .offset(start)
             .limit(end - start)
         )
@@ -86,10 +106,30 @@ async def get_alumnis(
         )
     
     except Exception as e:
+        await db.rollback()
+        error_message = str(e)
+
+        if "phone_number" in error_message:
+            return JSONResponse(
+                content={
+                    "status_code": 409,
+                    "message": "This phone number is already used by another alumni."
+                },
+                status_code=status.HTTP_409_CONFLICT
+            )
+        elif "fin_code" in error_message:
+            return JSONResponse(
+                content={
+                    "status_code": 409,
+                    "message": "This FIN code is already used by another alumni."
+                },
+                status_code=status.HTTP_409_CONFLICT
+            )
+
         return JSONResponse(
             content={
                 "status_code": 500,
-                "error": str(e)
+                "error": error_message
             }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -136,18 +176,13 @@ async def get_alumni_by_uuid(
             "gender": alumni.gender,
             "birth_date": alumni.birth_date.isoformat() if alumni.birth_date else None,
             "job_title": alumni.job_title,
-            "phone_number": alumni.phone_is_public,
+            "phone_number": alumni.phone_number,
+            "phone_is_public": alumni.phone_is_public,
             "registered_city": alumni.registered_city,
             "registered_address": alumni.registered_address,
             "address": alumni.address,
             "address_is_public": alumni.address_is_public,
-            "military_obligation": {
-                1: "Var",
-                2: "Yoxdur",
-                3: "Hərbi xidmətə yollanıram",
-                4: "Müvəqqəti olaraq getmirəm",
-                5: "Digər"
-            }.get(alumni.military_obligation, None),
+            "military_obligation": alumni.military_obligation,
             "married": alumni.married,
             "photo": photo.image if photo else None,
             "created_at": alumni.created_at.isoformat() if alumni.created_at else None,
@@ -161,6 +196,99 @@ async def get_alumni_by_uuid(
                 "status_code": 200,
                 "message": "Alumni details fetched.",
                 "alumni": alumni_obj,
+            }, status_code=status.HTTP_200_OK
+        )
+    
+    except Exception as e:
+        await db.rollback()
+        logger.exception("Error updating alumni profile") 
+        return JSONResponse(
+            content={
+                "status_code": 500,
+                "error": str(e)
+            }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+async def complete_profile(
+    request: CompleteProfile,
+    db:  AsyncSession = Depends(get_db)
+):
+    try:
+        auth_query = await db.execute(
+            select(Auth)
+            .where(Auth.uuid == request.uuid)
+        )
+
+        auth_user = auth_query.scalar_one_or_none()
+
+        if not auth_user:
+            return JSONResponse(
+                content={
+                    "status_code": 404,
+                    "message": "uuid is invalid."
+                }, status_code=status.HTTP_404_NOT_FOUND
+            )
+        
+        alumni_query =  await db.execute(
+            select(Alumni)
+            .where(Alumni.uuid == request.uuid)
+        )
+
+        alumni = alumni_query.scalar_one_or_none()
+
+        if not alumni:
+            return JSONResponse(
+                content={
+                    "status_code": 404,
+                    "message": "Alumni not found"
+                }, status_code=status.HTTP_404_NOT_FOUND
+            )
+        
+        phone_check = await db.execute(
+            select(Alumni)
+            .where(Alumni.phone_number == request.phone_number)
+            .where(Alumni.uuid != request.uuid)
+        )
+        if phone_check.scalar_one_or_none():
+            return JSONResponse(
+                status_code=409,
+                content={"status_code": 409, "message": "This phone number is already used by another alumni."}
+            )
+
+        # Same for FIN code
+        fin_check = await db.execute(
+            select(Alumni)
+            .where(Alumni.fin_code == request.fin_code)
+            .where(Alumni.uuid != request.uuid)
+        )
+        if fin_check.scalar_one_or_none():
+            return JSONResponse(
+                status_code=409,
+                content={"status_code": 409, "message": "This FIN code is already used by another alumni."}
+            )
+
+        alumni.name = request.name
+        alumni.surname = request.surname
+        alumni.father_name = request.father_name
+        alumni.phone_number = request.phone_number
+        alumni.phone_is_public = request.phone_is_public
+        alumni.fin_code = request.fin_code
+        alumni.job_title = request.job_title
+        alumni.registered_city = request.registered_city
+        alumni.registered_address = request.registered_address
+        alumni.address = request.address
+        alumni.address_is_public = request.address_is_public
+        alumni.military_obligation = request.military_obligation
+        alumni.married = request.married
+        alumni.updated_at = datetime.utcnow()
+
+        await db.commit()
+        await db.refresh(alumni)
+
+        return JSONResponse(
+            content={
+                "status_code": 200,
+                "message": "Profile completed successfully."
             }, status_code=status.HTTP_200_OK
         )
     

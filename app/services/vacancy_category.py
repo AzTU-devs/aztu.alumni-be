@@ -1,13 +1,12 @@
 import random
 from datetime import datetime
-from sqlalchemy import select, func
+from sqlalchemy import select
 from app.core.session import get_db
-from app.models.vacancy import Vacancy
+from fastapi import Depends, status
 from app.api.v1.schemas.vacancy import *
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.v1.schemas.vancacy_category import *
-from fastapi import Depends, HTTPException, status
 from app.models.vacancy_category import VacancyCategory
 
 def generate_category_code():
@@ -84,7 +83,8 @@ async def get_categories(
         for category in categories:
             cat_obj = {
                 "category_code": category.category_code,
-                "title": category.title
+                "title": category.title,
+                "created_at": category.created_at.isoformat() if category.created_at else None
             }
 
             category_arr.append(cat_obj)
@@ -94,6 +94,46 @@ async def get_categories(
                 "status_code": 200,
                 "message": "Categories fetched successfully.",
                 "categories": category_arr
+            }, status_code=status.HTTP_200_OK
+        )
+    
+    except Exception as e:
+        return JSONResponse(
+            content={
+                "status_code": 500,
+                "error": str(e)
+            }
+        )
+
+async def update_category(
+    request: UpdateVacancyCategory,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        category_query = await db.execute(
+            select(VacancyCategory)
+            .where(VacancyCategory.category_code == request.category_code)
+        )
+
+        category = category_query.scalar_one_or_none()
+
+        if not category:
+            return JSONResponse(
+                content={
+                    "status_code": 404,
+                    "message": "Category not found."
+                }, status_code=status.HTTP_404_NOT_FOUND
+            )
+        
+        category.title = request.title
+
+        await db.commit()
+        await db.refresh(category)
+
+        return JSONResponse(
+            content={
+                "status_code": 200,
+                "message": "Category updateed successfully."
             }, status_code=status.HTTP_200_OK
         )
     

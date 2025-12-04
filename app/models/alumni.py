@@ -36,8 +36,5 @@ class Alumni(Base):
     # 4 - muveqqeti olaraq getmirem
     # 5 - diger (other options)
     married = Column(Boolean)
-    created_at = Column(Date, nullable=False)
-    updated_at = Column(Date, onupdate=datetime.utcnow())
-    education_degree = Column(String, nullable=False)
-    start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime)

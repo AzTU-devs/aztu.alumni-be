@@ -23,3 +23,13 @@ async def create_category_endpoint(
         cat_request=cat_request,
         db=db
     )
+
+@router.put("/update")
+async def update_vacancy_category_endpoint(
+    requst: UpdateVacancyCategory,
+    db: AsyncSession = Depends(get_db)
+):
+    return await update_category(
+        request=requst,
+        db=db
+    )
