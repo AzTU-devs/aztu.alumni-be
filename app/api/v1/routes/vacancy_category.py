@@ -33,3 +33,13 @@ async def update_vacancy_category_endpoint(
         request=requst,
         db=db
     )
+
+@router.delete("/{category_code}/delete")
+async def delete_category_endpoint(
+    category_code: str,
+    db: AsyncSession = Depends(get_db)
+):
+    return await delete_category(
+        category_code=category_code,
+        db=db
+    )

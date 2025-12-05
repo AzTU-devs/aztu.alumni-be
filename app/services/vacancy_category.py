@@ -144,3 +144,41 @@ async def update_category(
                 "error": str(e)
             }
         )
+
+async def delete_category(
+    category_code: str,
+    db: AsyncSession = Depends(get_db)
+):
+    try:
+        category_query = await db.execute(
+            select(VacancyCategory)
+            .where(VacancyCategory.category_code == category_code)
+        )
+
+        category = category_query.scalar_one_or_none()
+
+        if not category:
+            return JSONResponse(
+                content={
+                    "status_code": 404,
+                    "message": "Category not found"
+                }, status_code=status.HTTP_404_NOT_FOUND
+            )
+        
+        await db.delete(category)
+        await db.commit()
+
+        return JSONResponse(
+            content={
+                "status_code": 200,
+                "message": "Category deleted successfully."
+            }, status_code=status.HTTP_200_OK
+        )
+    
+    except Exception as e:
+        return JSONResponse(
+            content={
+                "status_code": 500,
+                "error": str(e)
+            }
+        )

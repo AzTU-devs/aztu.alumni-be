@@ -22,5 +22,7 @@ class Vacancy(Base):
     is_salary_public = Column(Boolean, nullable=False, default=True)
     deadline = Column(Date, nullable=False)
     status = Column(Integer, nullable=False)
+    description = Column(String)
+    html_content = Column(String)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=True, onupdate=datetime.utcnow)

@@ -73,6 +73,8 @@ async def create_vacancy(
             is_salary_public=vacancy_request.is_salary_public,
             deadline=vacancy_request.deadline,
             status=1,
+            description=vacancy_request.description,
+            html_content=vacancy_request.html_content,
             created_at=datetime.utcnow()
         )
 
@@ -92,7 +94,7 @@ async def create_vacancy(
             content={
                 "status_code": 500,
                 "error": str(e)
-            }
+            }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
 async def get_vacancies(
@@ -167,7 +169,7 @@ async def get_vacancies(
 
             vacancy_obj = {
                 "vacancy_code": vacancy.vacancy_code,
-                "category": category.title,
+                "category": category.title if category else None,
                 "job_title": vacancy.job_title,
                 "company": vacancy.company,
                 "working_hours": vacancy.working_hours,
@@ -181,6 +183,8 @@ async def get_vacancies(
                 "is_salary_public": vacancy.is_salary_public,
                 "deadline": vacancy.deadline.isoformat() if vacancy.deadline else None,
                 "status": vacancy.status,
+                "description": vacancy.description,
+                "html_content": vacancy.html_content,
                 "created_at": vacancy.created_at.isoformat() if vacancy.created_at else None,
             }
 
@@ -200,5 +204,5 @@ async def get_vacancies(
             content={
                 "status_code": 500,
                 "error": str(e)
-            }
+            }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )

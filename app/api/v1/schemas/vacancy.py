@@ -51,6 +51,8 @@ class VacancyBase(BaseModel):
     is_salary_public: bool = True
     deadline: date
     status: int
+    description: str
+    html_content: str
 
 
 # Schema for creating a new vacancy
