@@ -1,5 +1,5 @@
 from sqlalchemy import (
-    Date,
+    DateTime,
     Column,
     Integer,
     String
@@ -14,5 +14,5 @@ class UserPhotos(Base):
     id = Column(Integer, primary_key=True, index=True)
     uuid = Column(UUID(as_uuid=True), unique=True, nullable=False)
     image = Column(String, nullable=False)
-    created_at = Column(Date, nullable=False)
-    updated_at = Column(Date, onupdate=datetime.utcnow())
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, onupdate=datetime.utcnow())

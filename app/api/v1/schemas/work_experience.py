@@ -7,7 +7,7 @@ class CreateExperience(BaseModel):
     company: str
     job_title: str
     start_date: date
-    end_date: Optional[date]
+    end_date: Optional[date] = None
     employment_type: int
     job_location_type: int
-    description: Optional[str]
+    description: Optional[str] = None

@@ -86,3 +86,8 @@ class VacancyResponse(VacancyBase):
 
     class Config:
         orm_mode = True
+
+
+class SaveVacancy(BaseModel):
+    uuid: str
+    vacancy_code: str

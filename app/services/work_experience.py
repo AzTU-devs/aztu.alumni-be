@@ -36,6 +36,16 @@ async def create_experience(
 ):
     try:
         logger.info(f"CreateExperience request received: {request.dict() if hasattr(request, 'dict') else request}")
+        logger.info("----- DEBUG CREATE EXPERIENCE PAYLOAD ------")
+        logger.info(f"uuid: {request.uuid}")
+        logger.info(f"company: {request.company}")
+        logger.info(f"job_title: {request.job_title}")
+        logger.info(f"start_date: {request.start_date} | type: {type(request.start_date)}")
+        logger.info(f"end_date: {request.end_date} | type: {type(request.end_date)}")
+        logger.info(f"employment_type: {request.employment_type}")
+        logger.info(f"job_location_type: {request.job_location_type}")
+        logger.info(f"description: {request.description}")
+        logger.info("-------------------------------------------")
         auth_query = await db.execute(
             select(Auth)
             .where(Auth.uuid == request.uuid)
@@ -76,11 +86,13 @@ async def create_experience(
         )
     
     except Exception as e:
-        logger.exception(f"Error while creating work experience. Payload: {request.dict() if hasattr(request, 'dict') else request}")
+        logger.exception("Error while creating work experience")
+        logger.error(f"Payload received: {request.dict() if hasattr(request, 'dict') else request}")
         return JSONResponse(
             content={
                 "status_code": 500,
-                "error": str(e)
+                "error": str(e),
+                "payload": jsonable_encoder(request)
             }, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -127,7 +139,7 @@ async def get_experience_by_uuid(
                 "job_title": experience.job_title,
                 "company": experience.company,
                 "start_date": experience.start_date.strftime("%d/%m/%Y"),
-                "end_date": experience.end_date.strftime("%d/%m/%Y"),
+                "end_date": experience.end_date.strftime("%d/%m/%Y") if experience.end_date else None,
                 "employment_type": experience.employment_type,
                 "job_location_type": experience.job_location_type,
                 "description": experience.description if experience.description else None

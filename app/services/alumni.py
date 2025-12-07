@@ -10,9 +10,24 @@ from fastapi.responses import JSONResponse
 from app.models.user_photos import UserPhotos
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
+import json
+import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+redis_client = None
+
+async def get_redis():
+    global redis_client
+    if not redis_client:
+        redis_client = redis.from_url(
+            "redis://localhost:6379",
+            decode_responses=True
+        )
+    return redis_client
+
+CACHE_TTL_SECONDS = None  # Cache will persist until manually cleared
 
 async def get_alumnis(
     start: int = Query(...),
@@ -21,6 +36,17 @@ async def get_alumnis(
     db:  AsyncSession = Depends(get_db)
 ):
     try:
+        redis_conn = await get_redis()
+
+        cache_key = f"alumnis:{start}:{end}:{search}"
+
+        cached_data = await redis_conn.get(cache_key)
+
+        if cached_data:
+            return JSONResponse(
+                content=json.loads(cached_data),
+                status_code=status.HTTP_200_OK
+            )
         base_query = select(Alumni)
 
         if search:
@@ -88,7 +114,6 @@ async def get_alumnis(
                 "email": auth_user.email,
                 "is_active": auth_user.is_active,
                 "military_obligation": military_map.get(alumni.military_obligation, None),
-                "job_title": alumni.job_title,
                 "photo": photo.image if photo else None,
                 "last_login": auth_user.last_login.isoformat() if auth_user.last_login else None,
                 "created_at": alumni.created_at.isoformat() if alumni.created_at else None
@@ -96,13 +121,28 @@ async def get_alumnis(
 
             alumni_arr.append(alumni_obj)
         
+        response_payload = {
+            "status_code": 200,
+            "message": "Alumnis fetched successfully.",
+            "alumnis": alumni_arr,
+            "total": total
+        }
+
+        if CACHE_TTL_SECONDS:
+            await redis_conn.setex(
+                cache_key,
+                CACHE_TTL_SECONDS,
+                json.dumps(response_payload, default=str)
+            )
+        else:
+            await redis_conn.set(
+                cache_key,
+                json.dumps(response_payload, default=str)
+            )
+
         return JSONResponse(
-            content={
-                "status_code": 200,
-                "message": "Alumnis fetched successfully.",
-                "alumnis": alumni_arr,
-                "total": total
-            }
+            content=response_payload,
+            status_code=status.HTTP_200_OK
         )
     
     except Exception as e:
@@ -175,12 +215,12 @@ async def get_alumni_by_uuid(
             "email": auth_user.email,
             "gender": alumni.gender,
             "birth_date": alumni.birth_date.isoformat() if alumni.birth_date else None,
-            "job_title": alumni.job_title,
             "phone_number": alumni.phone_number,
             "phone_is_public": alumni.phone_is_public,
             "registered_city": alumni.registered_city,
             "registered_address": alumni.registered_address,
             "address": alumni.address,
+            "job_title": alumni.job_title if alumni.job_title else None,
             "address_is_public": alumni.address_is_public,
             "military_obligation": alumni.military_obligation,
             "married": alumni.married,
@@ -350,6 +390,12 @@ async def create_alumni(
         db.add(new_alumni)
         await db.commit()
         await db.refresh(new_alumni)
+
+        # Clear alumni cache after adding a new alumni
+        redis_conn = await get_redis()
+        keys = await redis_conn.keys("alumnis:*")
+        if keys:
+            await redis_conn.delete(*keys)
 
         return JSONResponse(
             content={

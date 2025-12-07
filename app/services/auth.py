@@ -153,6 +153,7 @@ async def verify_signup(
             password_hash=hashed_password,
             is_active=True,
             is_verified=False,
+            role = 1,
             created_at=datetime.utcnow()
         )
 
@@ -315,7 +316,6 @@ async def signin(
             alumni.phone_number,
             alumni.phone_is_public,
             alumni.fin_code,
-            alumni.job_title,
             alumni.registered_city,
             alumni.registered_address,
             alumni.address,
@@ -327,17 +327,18 @@ async def signin(
         total_fields = len(profile_fields)
         profile_completed_percentage = int((filled_count / total_fields) * 100)
 
-        alumni_obj = {
+        alumni_obj = { 
             "uuid": str(alumni.uuid),
             "name": alumni.name,
             "surname": alumni.surname,
             "father_name": alumni.father_name,
             "email": auth_user.email,
             "fin_code": alumni.fin_code,
+            "role": auth_user.role,
             "profile_completed_percentage": profile_completed_percentage
         }
 
-        token = encode_auth_token(str(auth_user.uuid), auth_user.is_verified, auth_user.is_verified)
+        token = encode_auth_token(str(auth_user.uuid), auth_user.role, auth_user.is_verified)
 
         return JSONResponse(
             content={

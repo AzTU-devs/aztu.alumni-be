@@ -35,9 +35,8 @@ def decode_auth_token(auth_token):
         payload = jwt.decode(auth_token, SECRET_KEY, algorithms=['HS256'], options={"require": ["exp"]})
 
         return {
-            'fin_kod': payload['fin_kod'],
+            "uuid": payload["uuid"],
             'role': payload['role'],
-            'approved': payload['approved'],
             'exp': payload['exp']
         }
 

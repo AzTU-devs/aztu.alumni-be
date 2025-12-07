@@ -16,15 +16,15 @@ from app.util.uuid import generate_uuid
 from sqlalchemy.exc import IntegrityError
 from fastapi.responses import JSONResponse
 from app.util.jwt import encode_auth_token
+from fastapi import UploadFile, File, Form
 from app.api.v1.schemas.user_photos import *
 from app.models.user_photos import UserPhotos
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, status, Query, Request
 from app.models.auth_user_device import AuthUserDevice
-from fastapi import UploadFile, File
 
 async def upload_image(
-    uuid: str,
+    uuid: str = Form(...),
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db)
 ):
@@ -50,17 +50,27 @@ async def upload_image(
         with open(file_location, "wb") as buffer:
             import shutil
             shutil.copyfileobj(file.file, buffer)
-        
-        new_user_photo = UserPhotos(
-            uuid=uuid,
-            image=f"{folder_path}/image.png",
-            created_at=datetime.utcnow()
-        )
 
-        db.add(new_user_photo)
+        # Check if a user photo already exists
+        query = await db.execute(select(UserPhotos).where(UserPhotos.uuid == uuid))
+        existing_photo = query.scalar_one_or_none()
+
+        if existing_photo:
+            # Replace existing image path and update timestamp
+            existing_photo.image = file_location
+            existing_photo.updated_at = datetime.utcnow()
+            db.add(existing_photo)
+        else:
+            # Create new record
+            new_user_photo = UserPhotos(
+                uuid=uuid,
+                image=file_location,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow()
+            )
+            db.add(new_user_photo)
+
         await db.commit()
-        await db.refresh(new_user_photo)
-
         return JSONResponse(
             content={
                 "status_code": 201,
@@ -68,7 +78,10 @@ async def upload_image(
             },
             status_code=status.HTTP_201_CREATED
         )
+
     except Exception as e:
+        import traceback
+        print(traceback.format_exc())
         return JSONResponse(
             content={
                 "status_code": 500,
@@ -76,7 +89,6 @@ async def upload_image(
             },
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-
 async def delete_user_photo(
     uuid: str,
     db: AsyncSession = Depends(get_db)
